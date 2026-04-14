@@ -14,6 +14,8 @@
         input { padding: 8px 5px; border: 1px solid white; box-sizing: border-box; width: 100%; background-color: #444; color: white; text-align: center; font-size: 16px; }
         input:focus { outline: none; border-color: #007bff; }
         .header, .label { font-weight: bold; text-align: center; background-color: #555; color: white; padding: 5px; border: 1px solid white; font-size: 0.9em; }
+        
+        /* Calculated Totals Styling */
         .calculated { background-color: #000; font-weight: bold; color: #4CAF50; }
         
         /* Ghost Text Style */
@@ -35,8 +37,11 @@
         }
         .close-history { position: sticky; top: 0; background: #444; width: 100%; margin-bottom: 10px; padding: 15px; font-weight: bold; text-align: center; border: none; color: white; border-radius: 5px; cursor: pointer; z-index: 1001; }
         
+        .history-card { background: #222; border: 2px solid #555; margin-bottom: 30px; padding: 10px; border-radius: 8px; position: relative; }
+        .history-card-title { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #555; padding-bottom: 8px; margin-bottom: 15px; gap: 10px; }
+        
         .mini-sheet { transform: scale(0.85); transform-origin: top center; margin-bottom: -30px; }
-        .mini-val { border: 1px solid #666; background: #111; padding: 4px; text-align: center; font-size: 0.8em; min-height: 20px; }
+        .mini-val { border: 1px solid #666; background: #111; padding: 4px; text-align: center; font-size: 0.8em; min-height: 20px; color: white; }
         .mini-header { background: #444; font-size: 0.75em; font-weight: bold; text-align: center; border: 1px solid #666; }
         
         #loading-indicator { display: none; color: #ffc107; font-weight: bold; text-align: center; margin-bottom: 10px; }
@@ -151,13 +156,11 @@
         async function loadData() {
             showLoading(true);
             try {
-                // 1. Load typing progress from local storage
                 const localSaved = JSON.parse(localStorage.getItem(STORAGE_KEY));
                 if (localSaved) {
                     INPUT_IDS.forEach(id => { if(localSaved[id]) document.getElementById(id).value = localSaved[id]; });
                 }
 
-                // 2. Fetch History and Ghost Text from Cloud
                 const response = await fetch(WEB_APP_URL);
                 cloudHistory = await response.json();
                 
@@ -168,7 +171,6 @@
                         if (input && lastEntry[id]) input.placeholder = lastEntry[id];
                     });
                     
-                    // Set Ghost totals
                     let pT = 0, cT = 0;
                     ['wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8', 'cigars', 'pack_box_input', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged'].forEach(k => pT += parseFloat(lastEntry[k])||0);
                     ['back_room_qty', 'top_shelf_qty', 'back_drawer'].forEach(k => cT += parseFloat(lastEntry[k])||0);
@@ -228,7 +230,7 @@
             const container = document.getElementById('history-content');
             container.innerHTML = '';
             history.forEach((item, idx) => {
-                const d = item.fullData;
+                const d = item.fullData || {};
                 let pT = 0, cT = 0;
                 ['wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8', 'cigars', 'pack_box_input', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged'].forEach(k => pT += parseFloat(d[k])||0);
                 ['back_room_qty', 'top_shelf_qty', 'back_drawer'].forEach(k => cT += parseFloat(d[k])||0);
@@ -236,7 +238,7 @@
                 container.innerHTML += `
                     <div class="history-card">
                         <div class="history-card-title">
-                            <div style="flex-grow:1;"><strong>${item.date}</strong><br><small>${new Date(item.timestamp).toLocaleString()} (${item.type})</small></div>
+                            <div style="flex-grow:1;"><strong>${item.date || "No Date"}</strong><br><small>${item.timestamp ? new Date(item.timestamp).toLocaleString() : "Unknown Time"}</small></div>
                             <button onclick="restoreFromHistory(${idx})" style="background:#28a745; padding: 10px; border-radius:4px; color:white; border:none;">RESTORE</button>
                         </div>
                         <div class="mini-sheet">
