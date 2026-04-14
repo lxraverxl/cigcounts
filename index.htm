@@ -16,6 +16,13 @@
         .header, .label { font-weight: bold; text-align: center; background-color: #555; color: white; padding: 5px; border: 1px solid white; font-size: 0.9em; }
         .calculated { background-color: #000; font-weight: bold; color: #4CAF50; }
         
+        /* GHOST TEXT CSS - This makes the placeholders look ominous/faint */
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.2); 
+            font-style: italic;
+            font-size: 0.85em;
+        }
+
         /* Buttons */
         .button-group { margin-top: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         button { padding: 12px 20px; font-size: 1em; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
@@ -159,17 +166,34 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
 
+        // UPDATED: This function now handles ghost placeholders
         function loadSession() {
+            // 1. Load any data currently being typed (from storage)
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
             if (saved) {
                 INPUT_IDS.forEach(id => { if(saved[id]) document.getElementById(id).value = saved[id]; });
-                calculate();
             }
+
+            // 2. Load the most recent History entry to use as "Ghost Numbers"
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            if (history.length > 0) {
+                const lastEntry = history[0].fullData;
+                INPUT_IDS.forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input && input.type === "number" && lastEntry[id]) {
+                        // Set the value as a placeholder (ghost text)
+                        input.placeholder = lastEntry[id];
+                    }
+                });
+            }
+            
+            calculate();
         }
 
         function manualSave() {
             addHistoryEntry("Manual Save");
             alert("Snapshot saved to history!");
+            loadSession(); // Refresh ghost text immediately
         }
 
         function addHistoryEntry(type) {
@@ -178,7 +202,7 @@
 
             const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
             const snapshot = {
-                id: Date.now(), // Unique ID for deletion logic
+                id: Date.now(), 
                 type: type,
                 timestamp: new Date().toLocaleString(),
                 date: document.getElementById('count_date').value || "No Date",
@@ -198,7 +222,7 @@
                 if (input) input.value = '';
             });
             localStorage.removeItem(STORAGE_KEY);
-            calculate();
+            loadSession(); // This resets the sheet and shows the new ghost numbers
         }
 
         /* HISTORY MANAGEMENT LOGIC */
@@ -306,6 +330,7 @@
             history = history.filter(item => item.id !== id);
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
             openHistory(); // Refresh view
+            loadSession(); // Update placeholders
         }
 
         function deleteSelected() {
@@ -318,6 +343,7 @@
             history = history.filter(item => !idsToDelete.includes(item.id));
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
             openHistory(); // Refresh view
+            loadSession(); // Update placeholders
         }
 
         function closeHistory() { document.getElementById('history-overlay').style.display = 'none'; }
