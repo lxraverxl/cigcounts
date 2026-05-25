@@ -6,10 +6,23 @@
     <title>Cigarette Count Sheet</title>
     <style>
         /* Base Styles */
-        body { font-family: sans-serif; padding: 10px; background-color: black; color: white; }
+        body { 
+            font-family: sans-serif; 
+            padding: 10px; 
+            color: white; 
+            
+            /* Background configuration utilizing your renamed photo */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('background.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: black; 
+        }
+        
         .title { width: 100%; text-align: center; font-size: 1.2em; font-weight: bold; margin-bottom: 20px; }
         .container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-items: flex-start; }
-        .section { border: 1px solid white; padding: 10px; background-color: #333; }
+        .section { border: 1px solid white; padding: 10px; background-color: rgba(51, 51, 51, 0.9); box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
         .grid-container { display: grid; gap: 0; }
         input { padding: 8px 5px; border: 1px solid white; box-sizing: border-box; width: 100%; background-color: #444; color: white; text-align: center; font-size: 16px; }
         input:focus { outline: none; border-color: #007bff; }
@@ -165,17 +178,16 @@
             document.getElementById('carton_total').value = cTotal || "";
             document.getElementById('total').value = currentFinalTotal || "";
             
-            // Calculate and display variance compared to the previous snapshot total
             const varianceField = document.getElementById('variance');
             if (currentFinalTotal > 0 && previousTotal > 0) {
                 const diff = currentFinalTotal - previousTotal;
                 varianceField.value = (diff >= 0 ? "+" : "") + diff;
                 if (diff < 0) {
-                    varianceField.style.color = "#dc3545"; // Red for decrease
+                    varianceField.style.color = "#dc3545";
                 } else if (diff > 0) {
-                    varianceField.style.color = "#28a745"; // Green for increase
+                    varianceField.style.color = "#28a745";
                 } else {
-                    varianceField.style.color = "#ffc107"; // Yellow for neutral
+                    varianceField.style.color = "#ffc107";
                 }
             } else {
                 varianceField.value = "";
@@ -275,7 +287,6 @@
                 ['wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8', 'cigars', 'pack_box_input', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged'].forEach(k => pT += parseFloat(d[k])||0);
                 ['back_room_qty', 'top_shelf_qty', 'back_drawer'].forEach(k => cT += parseFloat(d[k])||0);
 
-                // Check formatting logic: display clean user date value explicitly, or fall back cleanly
                 const displayDate = item.date && item.date !== "No Date" ? item.date : "Log Entry";
                 const displayTime = item.timestamp ? new Date(item.timestamp).toLocaleString() : "Unknown Time";
 
