@@ -17,10 +17,14 @@
         
         /* Calculated Totals Styling */
         .calculated { background-color: #000; font-weight: bold; color: #4CAF50; }
+        .variance-neutral { color: #ffc107; font-weight: bold; background-color: #000; }
         
         /* Ghost Text Style */
         input::placeholder { color: rgba(255, 255, 255, 0.2); font-style: italic; font-size: 0.85em; }
         .calculated::placeholder { color: rgba(76, 175, 80, 0.3); }
+
+        /* Live Clock Display */
+        .live-clock { text-align: center; font-size: 0.85em; font-weight: bold; color: #ffc107; margin-top: 5px; min-height: 18px; }
 
         /* Buttons */
         .button-group { margin-top: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
@@ -72,7 +76,11 @@
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 <div class="section"><div class="header">Cigars</div><input type="number" id="cigars" oninput="calculate()"></div>
                 <div class="section"><div class="header">Box</div><input type="number" id="pack_box_input" oninput="calculate()"></div>
-                <div class="section"><div class="header">Date</div><input type="date" id="count_date" oninput="saveLocalProgress()"></div>
+                <div class="section">
+                    <div class="header">Date</div>
+                    <input type="date" id="count_date" oninput="saveLocalProgress()">
+                    <div class="live-clock" id="live-clock">--:--:-- --</div>
+                </div>
             </div>
 
             <div class="section">
@@ -102,6 +110,7 @@
                     <div class="label">Pack Total</div><input type="text" id="pack_total" class="calculated" readonly>
                     <div class="label">Carton Total</div><input type="text" id="carton_total" class="calculated" readonly>
                     <div class="label">Final Total</div><input type="text" id="total" class="calculated" readonly>
+                    <div class="label">Variance vs Prev</div><input type="text" id="variance" class="variance-neutral" readonly placeholder="0">
                 </div>
             </div>
         </div>
@@ -127,6 +136,15 @@
         ];
 
         let cloudHistory = [];
+        let previousTotal = 0;
+
+        function updateClock() {
+            const clockEl = document.getElementById('live-clock');
+            if (!clockEl) return;
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
 
         function showLoading(show) {
             document.getElementById('loading-indicator').style.display = show ? 'block' : 'none';
@@ -141,9 +159,28 @@
             pFields.forEach(id => pTotal += parseFloat(document.getElementById(id).value) || 0);
             cFields.forEach(id => cTotal += parseFloat(document.getElementById(id).value) || 0);
 
+            const currentFinalTotal = pTotal + (cTotal * 10);
+
             document.getElementById('pack_total').value = pTotal || "";
             document.getElementById('carton_total').value = cTotal || "";
-            document.getElementById('total').value = (pTotal + (cTotal * 10)) || "";
+            document.getElementById('total').value = currentFinalTotal || "";
+            
+            // Calculate and display variance compared to the previous snapshot total
+            const varianceField = document.getElementById('variance');
+            if (currentFinalTotal > 0 && previousTotal > 0) {
+                const diff = currentFinalTotal - previousTotal;
+                varianceField.value = (diff >= 0 ? "+" : "") + diff;
+                if (diff < 0) {
+                    varianceField.style.color = "#dc3545"; // Red for decrease
+                } else if (diff > 0) {
+                    varianceField.style.color = "#28a745"; // Green for increase
+                } else {
+                    varianceField.style.color = "#ffc107"; // Yellow for neutral
+                }
+            } else {
+                varianceField.value = "";
+            }
+
             saveLocalProgress();
         }
 
@@ -174,9 +211,12 @@
                     let pT = 0, cT = 0;
                     ['wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8', 'cigars', 'pack_box_input', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged'].forEach(k => pT += parseFloat(lastEntry[k])||0);
                     ['back_room_qty', 'top_shelf_qty', 'back_drawer'].forEach(k => cT += parseFloat(lastEntry[k])||0);
+                    
                     document.getElementById('pack_total').placeholder = pT;
                     document.getElementById('carton_total').placeholder = cT;
-                    document.getElementById('total').placeholder = pT + (cT * 10);
+                    
+                    previousTotal = pT + (cT * 10);
+                    document.getElementById('total').placeholder = previousTotal;
                 }
                 calculate();
             } catch (e) { console.error("Cloud sync failed", e); }
@@ -235,11 +275,18 @@
                 ['wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8', 'cigars', 'pack_box_input', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged'].forEach(k => pT += parseFloat(d[k])||0);
                 ['back_room_qty', 'top_shelf_qty', 'back_drawer'].forEach(k => cT += parseFloat(d[k])||0);
 
+                // Check formatting logic: display clean user date value explicitly, or fall back cleanly
+                const displayDate = item.date && item.date !== "No Date" ? item.date : "Log Entry";
+                const displayTime = item.timestamp ? new Date(item.timestamp).toLocaleString() : "Unknown Time";
+
                 container.innerHTML += `
                     <div class="history-card">
                         <div class="history-card-title">
-                            <div style="flex-grow:1;"><strong>${item.date || "No Date"}</strong><br><small>${item.timestamp ? new Date(item.timestamp).toLocaleString() : "Unknown Time"}</small></div>
-                            <button onclick="restoreFromHistory(${idx})" style="background:#28a745; padding: 10px; border-radius:4px; color:white; border:none;">RESTORE</button>
+                            <div style="flex-grow:1;">
+                                <span style="font-size: 1.3em; font-weight: bold; color: white;">${displayDate}</span><br>
+                                <span style="font-size: 0.85em; color: #aaa;">${displayTime}</span>
+                            </div>
+                            <button onclick="restoreFromHistory(${idx})" style="background:#28a745; padding: 10px; border-radius:4px; color:white; border:none; font-weight:bold; cursor:pointer;">RESTORE</button>
                         </div>
                         <div class="mini-sheet">
                              <div class="container">
@@ -264,7 +311,10 @@
 
         function closeHistory() { document.getElementById('history-overlay').style.display = 'none'; }
 
-        window.onload = loadData;
+        window.onload = function() {
+            loadData();
+            updateClock();
+        };
     </script>
 </body>
 </html>
