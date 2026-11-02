@@ -1,340 +1,543 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cigarette Count Sheet</title>
-    <style>
-        /* Base Styles */
-        body { 
-            font-family: sans-serif; 
-            padding: 10px; 
-            color: white; 
-            
-            /* Background configuration */
-            background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('background.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-color: black; 
-            min-height: 100vh;
-        }
-        
-        .title { width: 100%; text-align: center; font-size: 1.2em; font-weight: bold; margin-bottom: 20px; }
-        
-        /* Increased gap to 20px to give the screenshot tool clear borders to track */
-        .container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; }
-        .section { border: 1px solid #666; padding: 10px; background-color: rgba(45, 45, 45, 0.9); box-shadow: 0 4px 8px rgba(0,0,0,0.6); }
-        .grid-container { display: grid; gap: 0; }
-        
-        input { padding: 8px 5px; border: 1px solid #555; box-sizing: border-box; width: 100%; background-color: #3a3a3a; color: white; text-align: center; font-size: 16px; }
-        input:focus { outline: none; border-color: #007bff; }
-        .header, .label { font-weight: bold; text-align: center; background-color: #555; color: white; padding: 5px; border: 1px solid #666; font-size: 0.9em; }
-        
-        /* Zebra striping rows to give the scrolling screenshot tool unique anchors */
-        .grid-container input:nth-of-type(4n+1), 
-        .grid-container input:nth-of-type(4n+2) { 
-            background-color: #2b2b2b; 
-        }
-        
-        /* Calculated Totals Styling */
-        .calculated { background-color: #000 !important; font-weight: bold; color: #4CAF50; border-color: #444; }
-        .variance-neutral { color: #ffc107; font-weight: bold; background-color: #000 !important; border-color: #444; }
-        
-        /* Ghost Text Style */
-        input::placeholder { color: rgba(255, 255, 255, 0.2); font-style: italic; font-size: 0.85em; }
-        .calculated::placeholder { color: rgba(76, 175, 80, 0.3); }
-
-        /* Live Clock Display */
-        .live-clock { text-align: center; font-size: 0.85em; font-weight: bold; color: #ffc107; margin-top: 5px; min-height: 18px; }
-
-        /* Buttons */
-        .button-group { margin-top: 25px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        button { padding: 12px 20px; font-size: 1em; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-clear { background-color: #dc3545; }
-        .btn-save { background-color: #28a745; }
-        .btn-history { background-color: #007bff; }
-        
-        #history-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.98); z-index: 1000;
-            display: none; overflow-y: auto; padding: 15px; box-sizing: border-box;
-        }
-        .close-history { position: sticky; top: 0; background: #444; width: 100%; margin-bottom: 10px; padding: 15px; font-weight: bold; text-align: center; border: none; color: white; border-radius: 5px; cursor: pointer; z-index: 1001; }
-        
-        .history-card { background: #222; border: 2px solid #555; margin-bottom: 30px; padding: 10px; border-radius: 8px; position: relative; }
-        .history-card-title { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #555; padding-bottom: 8px; margin-bottom: 15px; gap: 10px; }
-        
-        .mini-sheet { transform: scale(0.85); transform-origin: top center; margin-bottom: -30px; }
-        .mini-val { border: 1px solid #666; background: #111; padding: 4px; text-align: center; font-size: 0.8em; min-height: 20px; color: white; }
-        .mini-header { background: #444; font-size: 0.75em; font-weight: bold; text-align: center; border: 1px solid #666; }
-        
-        #loading-indicator { display: none; color: #ffc107; font-weight: bold; text-align: center; margin-bottom: 10px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cigarette Count Sheet</title>
+<style>
+:root {
+  --panel: rgba(24, 24, 24, .91);
+  --line: rgba(255,255,255,.28);
+  --accent: #f0b429;
+  --input: rgba(12,12,12,.92);
+  --input-alt: rgba(48,48,48,.94);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; padding: 18px;
+  color: #fff; font-family: Arial, Helvetica, sans-serif;
+  background:
+    linear-gradient(rgba(0,0,0,.76),rgba(0,0,0,.82)),
+    url('background.jpg') center center / cover fixed no-repeat,
+    #080808;
+}
+.page { max-width: 1500px; margin: 0 auto; }
+.title {
+  text-align:center; font-size: clamp(1.65rem, 3vw, 2.4rem);
+  font-weight: 800; padding: 4px 0 12px; margin-bottom: 20px;
+  border-bottom: 2px solid rgba(255,255,255,.8);
+}
+#loading-indicator {
+  display:none; text-align:center; color:var(--accent);
+  font-weight:bold; margin: 0 0 14px;
+}
+.sheet {
+  display:grid;
+  grid-template-columns: minmax(145px, .95fr) minmax(280px, 2.15fr)
+    minmax(150px, 1.05fr) minmax(150px, 1.05fr) minmax(190px, 1.25fr);
+  grid-template-areas:
+    "wall top register back totals"
+    "wall cabinets register back totals"
+    "wall name box back totals"
+    "wall date damaged overflow totals";
+  gap: 16px;
+  align-items:stretch;
+}
+.panel {
+  min-width:0; padding: 10px; border:1px solid var(--line);
+  border-radius: 4px; background:var(--panel);
+  box-shadow:0 4px 12px rgba(0,0,0,.35);
+}
+.wall { grid-area:wall; }
+.top { grid-area:top; }
+.cabinets { grid-area:cabinets; }
+.register { grid-area:register; }
+.back { grid-area:back; }
+.box-panel { grid-area:box; }
+.name-panel { grid-area:name; }
+.date-panel { grid-area:date; }
+.damaged { grid-area:damaged; }
+.overflow { grid-area:overflow; }
+.totals {
+  grid-area:totals; display:flex; flex-direction:column;
+  justify-content:center; gap:28px; padding:22px 18px;
+  background:rgba(95,95,95,.88);
+}
+.section-title {
+  font-size:clamp(1rem,1.4vw,1.3rem); font-weight:800;
+  text-align:center; margin:0 0 7px; min-height:25px;
+}
+.fields { display:grid; gap:0; }
+.fields.one { grid-template-columns:1fr; }
+.fields.four { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.field {
+  width:100%; min-width:0; height:76px; border:1px solid rgba(255,255,255,.65);
+  border-radius:0; background:var(--input); color:#fff;
+  text-align:center; font-size:1.2rem; font-weight:600;
+  padding:8px; outline:none;
+}
+.fields .field:nth-child(even) { background:var(--input-alt); }
+.field:focus { border:2px solid #37c879; background:#202820; }
+.field::placeholder { color:rgba(255,255,255,.3); }
+.wall .field, .register .field, .back .field { height:76px; }
+.top .field, .box-panel .field, .name-panel .field, .date-panel .field { height:76px; }
+.cabinets .field { height:90px; }
+.tall .field { height:180px; }
+.name-panel .field { text-align:left; padding-left:12px; }
+.date-panel .field { color-scheme:dark; }
+.totals .total-group { text-align:center; }
+.totals label {
+  display:block; font-weight:800; font-size:1.35rem; margin-bottom:6px;
+}
+.total-output {
+  width:100%; height:72px; border:3px solid #111; background:#080808;
+  color:#fff; text-align:center; font-size:1.8rem; font-weight:800;
+  border-radius:0; padding:8px;
+}
+.total-output.final { border-color:#111; }
+.live-clock {
+  text-align:center; margin-top:8px; color:#ffe08a;
+  font-size:.95rem; font-weight:700; min-height:20px;
+}
+.button-group {
+  display:flex; justify-content:center; flex-wrap:wrap; gap:12px;
+  margin:20px 0 8px;
+}
+button {
+  border:0; border-radius:4px; padding:13px 20px;
+  color:#fff; font-size:1rem; font-weight:800; cursor:pointer;
+}
+button:disabled { opacity:.55; cursor:wait; }
+.btn-history { background:#0878d1; }
+.btn-save { background:#218838; }
+.btn-clear { background:#c92d3a; }
+#history-overlay {
+  display:none; position:fixed; inset:0; z-index:1000;
+  overflow-y:auto; padding:16px; background:rgba(0,0,0,.97);
+}
+.close-history {
+  position:sticky; top:0; width:100%; z-index:2;
+  margin-bottom:14px; background:#444; text-align:center;
+}
+.history-card {
+  max-width:900px; margin:0 auto 16px; padding:14px;
+  border:1px solid #555; border-radius:7px; background:#202020;
+}
+.history-card-title {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding-bottom:10px; border-bottom:1px solid #555;
+}
+.history-meta { color:#bbb; font-size:.9rem; margin-top:4px; }
+.history-totals {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px;
+}
+.history-total {
+  padding:10px 5px; text-align:center; background:#111;
+  border:1px solid #555; border-radius:4px;
+}
+.history-total strong { display:block; color:#83d99b; font-size:1.25rem; margin-top:4px; }
+.history-details { color:#ccc; font-size:.9rem; margin-top:10px; }
+@media (max-width: 850px) {
+  body { padding:10px; background-attachment:scroll; }
+  .title { margin-bottom:14px; }
+  .sheet {
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .panel { width:100%; padding:10px; }
+  .section-title { font-size:1.1rem; }
+  .wall .fields { grid-template-columns:1fr; }
+  .cabinets .fields.four { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .wall .field { height:58px; }
+  .top .field, .box-panel .field, .name-panel .field, .date-panel .field { height:58px; }
+  .register .field, .back .field { height:58px; }
+  .cabinets .field { height:64px; }
+  .tall .field { height:100px; }
+  .totals {
+    display:grid; grid-template-columns:1fr; gap:12px;
+    padding:14px;
+  }
+  .total-output { height:58px; font-size:1.5rem; }
+  .totals label { font-size:1.1rem; }
+  .button-group { position:static; gap:8px; }
+  .button-group button { flex:1 1 135px; padding:13px 10px; }
+}
+@media (min-width:851px) and (max-width:1100px) {
+  .sheet { grid-template-columns: .9fr 1.6fr .95fr .95fr 1.1fr; gap:9px; }
+  .field { height:64px; }
+  .wall .field, .register .field, .back .field { height:64px; }
+}
+</style>
 </head>
 <body>
+<div class="page">
+  <div class="title">Cigarette Count Sheet</div>
+  <div id="loading-indicator">Updating Cloud Data...</div>
 
-    <div class="title">Cigarette Count Sheet</div>
-    <div id="loading-indicator">Updating Cloud Data...</div>
+  <main class="sheet" id="main-form">
+    <section class="panel wall">
+      <h2 class="section-title">Wall Rack</h2>
+      <div class="fields one" id="wall-fields">
+        <input class="field count-input" type="number" min="0" step="1" id="wr_1" aria-label="Wall Rack 1">
+        <input class="field count-input" type="number" min="0" step="1" id="wr_2" aria-label="Wall Rack 2">
+        <input class="field count-input" type="number" min="0" step="1" id="wr_3" aria-label="Wall Rack 3">
+        <input class="field count-input" type="number" min="0" step="1" id="wr_4" aria-label="Wall Rack 4">
+        <input class="field count-input" type="number" min="0" step="1" id="wr_5" aria-label="Wall Rack 5">
+        <input class="field count-input" type="number" min="0" step="1" id="wr_6" aria-label="Wall Rack 6">
+        <input class="field count-input" type="number" min="0" step="1" id="wr_7" aria-label="Wall Rack 7">
+        <input class="field count-input" type="number" min="0" step="1" id="wr_8" aria-label="Wall Rack 8">
+      </div>
+    </section>
 
-    <div id="main-form">
-        <div class="container">
-            <div class="section">
-                <div class="grid-container" style="grid-template-columns: 1fr 1fr; width: 180px;">
-                    <div class="header" style="grid-column: 1 / 3;">Wall Rack</div>
-                    <div class="header">Left</div><div class="header">Right</div>
-                    <input type="number" id="wr_l_1" oninput="calculate()"> <input type="number" id="wr_r_1" oninput="calculate()">
-                    <input type="number" id="wr_l_2" oninput="calculate()"> <input type="number" id="wr_r_2" oninput="calculate()">
-                    <input type="number" id="wr_l_3" oninput="calculate()"> <input type="number" id="wr_r_3" oninput="calculate()">
-                    <input type="number" id="wr_l_4" oninput="calculate()"> <input type="number" id="wr_r_4" oninput="calculate()">
-                    <input type="number" id="wr_l_5" oninput="calculate()"> <input type="number" id="wr_r_5" oninput="calculate()">
-                    <input type="number" id="wr_l_6" oninput="calculate()"> <input type="number" id="wr_r_6" oninput="calculate()">
-                    <input type="number" id="wr_l_7" oninput="calculate()"> <input type="number" id="wr_r_7" oninput="calculate()">
-                    <input type="number" id="wr_l_8" oninput="calculate()"> <input type="number" id="wr_r_8" oninput="calculate()">
-                </div>
-            </div>
+    <section class="panel top">
+      <h2 class="section-title">Top Shelf</h2>
+      <div class="fields one">
+        <input class="field count-input" type="number" min="0" step="1" id="top_shelf" aria-label="Top Shelf">
+      </div>
+    </section>
 
-            <div style="display: flex; flex-direction: column; gap: 15px;">
-                <div class="section"><div class="header">Cigars</div><input type="number" id="cigars" oninput="calculate()"></div>
-                <div class="section"><div class="header">Box</div><input type="number" id="pack_box_input" oninput="calculate()"></div>
-                <div class="section">
-                    <div class="header">Date</div>
-                    <input type="date" id="count_date" oninput="saveLocalProgress()">
-                    <div class="live-clock" id="live-clock">--:--:-- --</div>
-                </div>
-            </div>
+    <section class="panel cabinets">
+      <h2 class="section-title">Top Cabinets</h2>
+      <div class="fields four">
+        <input class="field count-input" type="number" min="0" step="1" id="top_cab_1" aria-label="Top Cabinet 1">
+        <input class="field count-input" type="number" min="0" step="1" id="top_cab_2" aria-label="Top Cabinet 2">
+        <input class="field count-input" type="number" min="0" step="1" id="top_cab_3" aria-label="Top Cabinet 3">
+        <input class="field count-input" type="number" min="0" step="1" id="top_cab_4" aria-label="Top Cabinet 4">
+      </div>
+    </section>
 
-            <div class="section">
-                <div class="grid-container" style="grid-template-columns: 1fr 1fr; width: 180px;">
-                    <div class="header">Reg 2</div><div class="header">Reg 1</div>
-                    <div class="label">R1</div><div class="label">R1</div>
-                    <input type="number" id="reg2_r1" oninput="calculate()"> <input type="number" id="reg1_r1" oninput="calculate()">
-                    <div class="label">R2</div><div class="label">R2</div>
-                    <input type="number" id="reg2_r2" oninput="calculate()"> <input type="number" id="reg1_r2" oninput="calculate()">
-                    <div class="label">R3</div><div class="label">R3</div>
-                    <input type="number" id="reg2_r3" oninput="calculate()"> <input type="number" id="reg1_r3" oninput="calculate()">
-                </div>
-            </div>
-        </div>
+    <section class="panel register">
+      <h2 class="section-title">Register 1</h2>
+      <div class="fields one">
+        <input class="field count-input" type="number" min="0" step="1" id="reg1_1" aria-label="Register 1 shelf 1">
+        <input class="field count-input" type="number" min="0" step="1" id="reg1_2" aria-label="Register 1 shelf 2">
+        <input class="field count-input" type="number" min="0" step="1" id="reg1_3" aria-label="Register 1 shelf 3">
+      </div>
+    </section>
 
-        <div class="container" style="margin-top: 20px;">
-            <div class="section">
-                <div class="grid-container" style="grid-template-columns: 1fr; width: 150px;">
-                    <div class="label">Back Room</div><input type="number" id="back_room_qty" oninput="calculate()">
-                    <div class="label">Top Shelf</div><input type="number" id="top_shelf_qty" oninput="calculate()">
-                    <div class="label">Drawer</div><input type="number" id="back_drawer" oninput="calculate()">
-                </div>
-            </div>
-            <div class="section" style="width: 150px;">
-                <div class="grid-container" style="grid-template-columns: 1fr;">
-                    <div class="label">Damaged</div><input type="number" id="damaged" oninput="calculate()">
-                    <div class="label">Pack Total</div><input type="text" id="pack_total" class="calculated" readonly>
-                    <div class="label">Carton Total</div><input type="text" id="carton_total" class="calculated" readonly>
-                    <div class="label">Final Total</div><input type="text" id="total" class="calculated" readonly>
-                    <div class="label">Variance vs Prev</div><input type="text" id="variance" class="variance-neutral" readonly placeholder="0">
-                </div>
-            </div>
-        </div>
-    </div>
+    <section class="panel back">
+      <h2 class="section-title">Back Cabinet</h2>
+      <div class="fields one">
+        <input class="field count-input" type="number" min="0" step="1" id="back_cab_1" aria-label="Back Cabinet 1">
+        <input class="field count-input" type="number" min="0" step="1" id="back_cab_2" aria-label="Back Cabinet 2">
+        <input class="field count-input" type="number" min="0" step="1" id="back_cab_3" aria-label="Back Cabinet 3">
+        <input class="field count-input" type="number" min="0" step="1" id="back_cab_4" aria-label="Back Cabinet 4">
+      </div>
+    </section>
 
-    <div class="button-group">
-        <button class="btn-history" id="histBtn" onclick="openHistory()">History Log</button>
-        <button class="btn-save" id="saveBtn" onclick="manualSave()">Save Snapshot</button>
-        <button class="btn-clear" id="clearBtn" onclick="clearSheet()">Clear All</button>
-    </div>
+    <section class="panel box-panel">
+      <h2 class="section-title">Box</h2>
+      <div class="fields one">
+        <input class="field count-input" type="number" min="0" step="1" id="box" aria-label="Box">
+      </div>
+    </section>
 
-    <div id="history-overlay">
-        <button class="close-history" onclick="closeHistory()">← CLOSE HISTORY</button>
-        <div id="history-content"></div>
-    </div>
+    <section class="panel name-panel">
+      <h2 class="section-title" style="text-align:left">Name</h2>
+      <input class="field" type="text" id="count_name" autocomplete="name" aria-label="Name">
+    </section>
 
-    <script>
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwqfOudYodS3A31jl16OfrCQ0k5QV4toNJ_bMo0IxPRsxfbH7R1G8K2ALk9uR5YvrWkNA/exec';
-        const STORAGE_KEY = 'cig_sheet_local_temp'; 
-        const INPUT_IDS = [
-            'wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8',
-            'cigars', 'pack_box_input', 'count_date', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged', 'back_room_qty', 'top_shelf_qty', 'back_drawer'
-        ];
+    <section class="panel date-panel">
+      <h2 class="section-title" style="text-align:left">Date</h2>
+      <input class="field" type="date" id="count_date" aria-label="Count date">
+      <div class="live-clock" id="live-clock">--:--:--</div>
+    </section>
 
-        let cloudHistory = [];
-        let previousTotal = 0;
+    <section class="panel damaged tall">
+      <h2 class="section-title">Damaged</h2>
+      <div class="fields one">
+        <input class="field count-input" type="number" min="0" step="1" id="damaged" aria-label="Damaged packs">
+      </div>
+    </section>
 
-        function updateClock() {
-            const clockEl = document.getElementById('live-clock');
-            if (!clockEl) return;
-            const now = new Date();
-            clockEl.textContent = now.toLocaleTimeString();
-        }
-        setInterval(updateClock, 1000);
+    <section class="panel overflow tall">
+      <h2 class="section-title">Back Overflow</h2>
+      <div class="fields one">
+        <input class="field count-input" type="number" min="0" step="1" id="back_overflow" aria-label="Back Overflow cartons">
+      </div>
+    </section>
 
-        function showLoading(show) {
-            document.getElementById('loading-indicator').style.display = show ? 'block' : 'none';
-            document.getElementById('saveBtn').disabled = show;
-        }
+    <section class="panel totals">
+      <div class="total-group">
+        <label for="pack_total">Pack Total</label>
+        <input class="total-output" type="text" id="pack_total" readonly>
+      </div>
+      <div class="total-group">
+        <label for="carton_total">Carton Total</label>
+        <input class="total-output" type="text" id="carton_total" readonly>
+      </div>
+      <div class="total-group">
+        <label for="total">Total</label>
+        <input class="total-output final" type="text" id="total" readonly>
+      </div>
+      <div class="total-group">
+        <label for="variance">Variance vs Prev</label>
+        <input class="total-output" type="text" id="variance" readonly placeholder="—">
+      </div>
+    </section>
+  </main>
 
-        function calculate() {
-            let pTotal = 0, cTotal = 0;
-            const pFields = ['wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8', 'cigars', 'pack_box_input', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged'];
-            const cFields = ['back_room_qty', 'top_shelf_qty', 'back_drawer'];
-            
-            pFields.forEach(id => pTotal += parseFloat(document.getElementById(id).value) || 0);
-            cFields.forEach(id => cTotal += parseFloat(document.getElementById(id).value) || 0);
+  <div class="button-group">
+    <button class="btn-history" id="histBtn" type="button" onclick="openHistory()">History Log</button>
+    <button class="btn-save" id="saveBtn" type="button" onclick="manualSave()">Save Snapshot</button>
+    <button class="btn-clear" id="clearBtn" type="button" onclick="clearSheet()">Clear All</button>
+  </div>
+</div>
 
-            const currentFinalTotal = pTotal + (cTotal * 10);
+<div id="history-overlay">
+  <button class="close-history" type="button" onclick="closeHistory()">← CLOSE HISTORY</button>
+  <div id="history-content"></div>
+</div>
 
-            document.getElementById('pack_total').value = pTotal || "";
-            document.getElementById('carton_total').value = cTotal || "";
-            document.getElementById('total').value = currentFinalTotal || "";
-            
-            const varianceField = document.getElementById('variance');
-            if (currentFinalTotal > 0 && previousTotal > 0) {
-                const diff = currentFinalTotal - previousTotal;
-                varianceField.value = (diff >= 0 ? "+" : "") + diff;
-                if (diff < 0) {
-                    varianceField.style.color = "#dc3545";
-                } else if (diff > 0) {
-                    varianceField.style.color = "#28a745";
-                } else {
-                    varianceField.style.color = "#ffc107";
-                }
-            } else {
-                varianceField.value = "";
-            }
+<script>
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwqfOudYodS3A31jl16OfrCQ0k5QV4toNJ_bMo0IxPRsxfbH7R1G8K2ALk9uR5YvrWkNA/exec';
+const STORAGE_KEY = 'cig_sheet_local_temp';
+const INPUT_IDS = [
+  'wr_1','wr_2','wr_3','wr_4','wr_5','wr_6','wr_7','wr_8',
+  'top_shelf','top_cab_1','top_cab_2','top_cab_3','top_cab_4',
+  'reg1_1','reg1_2','reg1_3',
+  'back_cab_1','back_cab_2','back_cab_3','back_cab_4',
+  'box','count_name','count_date','damaged','back_overflow'
+];
+const PACK_FIELDS = ['wr_1','wr_2','wr_3','wr_4','wr_5','wr_6','wr_7','wr_8',
+  'reg1_1','reg1_2','reg1_3','box','damaged'];
+const CARTON_FIELDS = ['top_shelf','top_cab_1','top_cab_2','top_cab_3','top_cab_4',
+  'back_cab_1','back_cab_2','back_cab_3','back_cab_4','back_overflow'];
+const LEGACY_WALL_FIELDS = Array.from({length:8}, (_,i) => [`wr_l_${i+1}`,`wr_r_${i+1}`]);
+let cloudHistory = [];
+let previousTotal = 0;
+let busy = false;
 
-            saveLocalProgress();
-        }
+function valueOf(id) {
+  return Number.parseFloat(document.getElementById(id)?.value) || 0;
+}
+function sumFields(fields) {
+  return fields.reduce((sum,id) => sum + valueOf(id), 0);
+}
+function updateClock() {
+  document.getElementById('live-clock').textContent =
+    new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
 
-        function saveLocalProgress() {
-            const data = {};
-            INPUT_IDS.forEach(id => data[id] = document.getElementById(id).value);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        }
+function showLoading(show) {
+  busy = show;
+  document.getElementById('loading-indicator').style.display = show ? 'block' : 'none';
+  ['saveBtn','clearBtn'].forEach(id => document.getElementById(id).disabled = show);
+}
+function calculate() {
+  const packs = sumFields(PACK_FIELDS);
+  const cartons = sumFields(CARTON_FIELDS);
+  const finalTotal = packs + cartons * 10;
+  document.getElementById('pack_total').value = packs || '';
+  document.getElementById('carton_total').value = cartons || '';
+  document.getElementById('total').value = finalTotal || '';
+  const variance = document.getElementById('variance');
+  if (finalTotal > 0 && previousTotal > 0) {
+    const diff = finalTotal - previousTotal;
+    variance.value = (diff > 0 ? '+' : '') + diff;
+    variance.style.color = diff < 0 ? '#c92d3a' : diff > 0 ? '#218838' : '#b77900';
+  } else {
+    variance.value = '';
+    variance.style.color = '#111';
+  }
+  saveLocalProgress();
+}
+function collectData() {
+  const data = {};
+  INPUT_IDS.forEach(id => data[id] = document.getElementById(id).value);
+  return data;
+}
+function saveLocalProgress() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collectData())); }
+  catch (e) { console.warn('Local save unavailable', e); }
+}
 
-        async function loadData() {
-            showLoading(true);
-            try {
-                const localSaved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-                if (localSaved) {
-                    INPUT_IDS.forEach(id => { if(localSaved[id]) document.getElementById(id).value = localSaved[id]; });
-                }
-
-                const response = await fetch(WEB_APP_URL);
-                cloudHistory = await response.json();
-                
-                if (cloudHistory.length > 0) {
-                    const lastEntry = cloudHistory[0].fullData;
-                    INPUT_IDS.forEach(id => {
-                        const input = document.getElementById(id);
-                        if (input && lastEntry[id]) input.placeholder = lastEntry[id];
-                    });
-                    
-                    let pT = 0, cT = 0;
-                    ['wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8', 'cigars', 'pack_box_input', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged'].forEach(k => pT += parseFloat(lastEntry[k])||0);
-                    ['back_room_qty', 'top_shelf_qty', 'back_drawer'].forEach(k => cT += parseFloat(lastEntry[k])||0);
-                    
-                    document.getElementById('pack_total').placeholder = pT;
-                    document.getElementById('carton_total').placeholder = cT;
-                    
-                    previousTotal = pT + (cT * 10);
-                    document.getElementById('total').placeholder = previousTotal;
-                }
-                calculate();
-            } catch (e) { console.error("Cloud sync failed", e); }
-            showLoading(false);
-        }
-
-        async function syncToCloud(type) {
-            const total = document.getElementById('total').value || document.getElementById('total').placeholder;
-            if (!total || total == 0) return;
-
-            showLoading(true);
-            const data = {};
-            INPUT_IDS.forEach(id => data[id] = document.getElementById(id).value);
-
-            const payload = {
-                type: type,
-                date: document.getElementById('count_date').value || "No Date",
-                fullData: data
-            };
-
-            try {
-                await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-                await loadData(); 
-            } catch (e) { alert("Cloud save failed."); }
-            showLoading(false);
-        }
-
-        function manualSave() {
-            syncToCloud("Manual Save").then(() => alert("Snapshot synced!"));
-        }
-
-        async function clearSheet() {
-            if (!confirm("Sync to cloud and clear device?")) return;
-            await syncToCloud("End of Shift");
-            INPUT_IDS.forEach(id => document.getElementById(id).value = '');
-            localStorage.removeItem(STORAGE_KEY);
-            await loadData();
-        }
-
-        function openHistory() {
-            const container = document.getElementById('history-content');
-            if (cloudHistory.length === 0) {
-                container.innerHTML = '<p style="text-align:center">No cloud history found.</p>';
-            } else {
-                renderHistoryCards(cloudHistory);
-            }
-            document.getElementById('history-overlay').style.display = 'block';
-        }
-
-        function renderHistoryCards(history) {
-            const container = document.getElementById('history-content');
-            container.innerHTML = '';
-            history.forEach((item, idx) => {
-                const d = item.fullData || {};
-                let pT = 0, cT = 0;
-                ['wr_l_1', 'wr_r_1', 'wr_l_2', 'wr_r_2', 'wr_l_3', 'wr_r_3', 'wr_l_4', 'wr_r_4', 'wr_l_5', 'wr_r_5', 'wr_l_6', 'wr_r_6', 'wr_l_7', 'wr_r_7', 'wr_l_8', 'wr_r_8', 'cigars', 'pack_box_input', 'reg2_r1', 'reg1_r1', 'reg2_r2', 'reg1_r2', 'reg2_r3', 'reg1_r3', 'damaged'].forEach(k => pT += parseFloat(d[k])||0);
-                ['back_room_qty', 'top_shelf_qty', 'back_drawer'].forEach(k => cT += parseFloat(d[k])||0);
-
-                const displayDate = item.date && item.date !== "No Date" ? item.date : "Log Entry";
-                const displayTime = item.timestamp ? new Date(item.timestamp).toLocaleString() : "Unknown Time";
-
-                container.innerHTML += `
-                    <div class="history-card">
-                        <div class="history-card-title">
-                            <div style="flex-grow:1;">
-                                <span style="font-size: 1.3em; font-weight: bold; color: white;">${displayDate}</span><br>
-                                <span style="font-size: 0.85em; color: #aaa;">${displayTime}</span>
-                            </div>
-                            <button onclick="restoreFromHistory(${idx})" style="background:#28a745; padding: 10px; border-radius:4px; color:white; border:none; font-weight:bold; cursor:pointer;">RESTORE</button>
-                        </div>
-                        <div class="mini-sheet">
-                             <div class="container">
-                                <div class="section">
-                                    <div class="grid-container" style="grid-template-columns: 1fr; width: 120px;">
-                                        <div class="mini-header" style="background:#000; color:#4CAF50">TOTAL</div>
-                                        <div class="mini-val" style="color:#4CAF50; font-weight:bold">${pT + (cT * 10)}</div>
-                                    </div>
-                                </div>
-                             </div>
-                        </div>
-                    </div>`;
-            });
-        }
-
-        function restoreFromHistory(idx) {
-            const data = cloudHistory[idx].fullData;
-            INPUT_IDS.forEach(id => document.getElementById(id).value = data[id] || '');
-            calculate();
-            document.getElementById('history-overlay').style.display = 'none';
-        }
-
-        function closeHistory() { document.getElementById('history-overlay').style.display = 'none'; }
-
-        window.onload = function() {
-            loadData();
-            updateClock();
-        };
-    </script>
+// Read both the new format and older cloud snapshots without changing the cloud service.
+function normalizeLegacyData(source) {
+  const d = {...(source || {})};
+  if (!('wr_1' in d)) {
+    LEGACY_WALL_FIELDS.forEach((pair,i) => {
+      const a = Number.parseFloat(d[pair[0]]) || 0;
+      const b = Number.parseFloat(d[pair[1]]) || 0;
+      d[`wr_${i+1}`] = (a + b) || '';
+    });
+  }
+  if (!('reg1_1' in d)) {
+    ['r1','r2','r3'].forEach((old,i) => d[`reg1_${i+1}`] = d[`reg1_${old}`] || '');
+  }
+  if (!('top_shelf' in d)) d.top_shelf = d.top_shelf_qty || '';
+  if (!('box' in d)) d.box = d.pack_box_input || '';
+  if (!('back_overflow' in d)) d.back_overflow = d.back_drawer || '';
+  if (!('back_cab_1' in d)) d.back_cab_1 = d.back_room_qty || '';
+  if (!('damaged' in d)) d.damaged = d.damaged || '';
+  return d;
+}
+function calculateSnapshot(data) {
+  const d = normalizeLegacyData(data);
+  const num = id => Number.parseFloat(d[id]) || 0;
+  let packs = PACK_FIELDS.reduce((s,id) => s + num(id), 0);
+  let cartons = CARTON_FIELDS.reduce((s,id) => s + num(id), 0);
+  // Old history stored two wall-rack columns and the old register layout.
+  if (!('wr_1' in (data || {}))) {
+    packs = LEGACY_WALL_FIELDS.flat().reduce((s,id) => s + (Number.parseFloat(data?.[id]) || 0), 0)
+      + ['reg1_r1','reg1_r2','reg1_r3','pack_box_input','damaged'].reduce((s,id) => s + (Number.parseFloat(data?.[id]) || 0), 0);
+    cartons = ['top_shelf_qty','back_room_qty','back_drawer'].reduce((s,id) => s + (Number.parseFloat(data?.[id]) || 0), 0);
+  }
+  return {packs, cartons, total:packs + cartons * 10, data:d};
+}
+async function loadData() {
+  showLoading(true);
+  try {
+    const localSaved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (localSaved) {
+      const normalized = normalizeLegacyData(localSaved);
+      INPUT_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (normalized[id] !== undefined && normalized[id] !== null) el.value = normalized[id];
+      });
+    }
+    const response = await fetch(WEB_APP_URL, {cache:'no-store'});
+    if (!response.ok) throw new Error(`Cloud returned ${response.status}`);
+    const result = await response.json();
+    cloudHistory = Array.isArray(result) ? result : [];
+    if (cloudHistory.length) {
+      const latest = calculateSnapshot(cloudHistory[0].fullData || {});
+      previousTotal = latest.total;
+      INPUT_IDS.forEach(id => {
+        const field = document.getElementById(id);
+        const val = latest.data[id];
+        if (val !== undefined && val !== '') field.placeholder = val;
+      });
+    }
+    calculate();
+  } catch (error) {
+    console.error('Cloud sync failed:', error);
+    calculate();
+  } finally {
+    showLoading(false);
+  }
+}
+async function syncToCloud(type) {
+  const currentTotal = Number(document.getElementById('total').value) || 0;
+  if (currentTotal <= 0) return false;
+  showLoading(true);
+  const payload = {
+    type,
+    date: document.getElementById('count_date').value || 'No Date',
+    fullData: collectData()
+  };
+  try {
+    const response = await fetch(WEB_APP_URL, {
+      method:'POST',
+      body:JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(`Cloud save returned ${response.status}`);
+    await loadData();
+    return true;
+  } catch (error) {
+    console.error('Cloud save failed:', error);
+    alert('Cloud save failed. Your current entries are still saved on this device.');
+    return false;
+  } finally {
+    showLoading(false);
+  }
+}
+async function manualSave() {
+  if (busy) return;
+  if (Number(document.getElementById('total').value) <= 0) {
+    alert('Enter a count before saving a snapshot.');
+    return;
+  }
+  const saved = await syncToCloud('Manual Save');
+  if (saved) alert('Snapshot synced!');
+}
+async function clearSheet() {
+  if (busy) return;
+  if (!confirm('Save this count to cloud history and clear this device?')) return;
+  if (Number(document.getElementById('total').value) > 0) {
+    const saved = await syncToCloud('End of Shift');
+    if (!saved) return;
+  }
+  INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+    el.placeholder = '';
+  });
+  previousTotal = cloudHistory.length ? calculateSnapshot(cloudHistory[0].fullData || {}).total : 0;
+  localStorage.removeItem(STORAGE_KEY);
+  calculate();
+}
+function openHistory() {
+  renderHistoryCards();
+  document.getElementById('history-overlay').style.display = 'block';
+}
+function renderHistoryCards() {
+  const container = document.getElementById('history-content');
+  if (!cloudHistory.length) {
+    container.innerHTML = '<p style="text-align:center">No cloud history found.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  cloudHistory.forEach((item,idx) => {
+    const result = calculateSnapshot(item.fullData || {});
+    const date = item.date && item.date !== 'No Date' ? item.date : 'Log Entry';
+    const time = item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown time';
+    const name = result.data.count_name || '';
+    const card = document.createElement('section');
+    card.className = 'history-card';
+    const heading = document.createElement('div');
+    heading.className = 'history-card-title';
+    const meta = document.createElement('div');
+    const dateEl = document.createElement('strong');
+    dateEl.style.fontSize = '1.2rem';
+    dateEl.textContent = `${date}${name ? ' — ' + name : ''}`;
+    const timeEl = document.createElement('div');
+    timeEl.className = 'history-meta';
+    timeEl.textContent = time;
+    meta.append(dateEl,timeEl);
+    const restore = document.createElement('button');
+    restore.textContent = 'RESTORE';
+    restore.style.background = '#218838';
+    restore.onclick = () => restoreFromHistory(idx);
+    heading.append(meta,restore);
+    const totals = document.createElement('div');
+    totals.className = 'history-totals';
+    [['Pack Total',result.packs],['Carton Total',result.cartons],['Total',result.total]].forEach(([label,val]) => {
+      const box = document.createElement('div');
+      box.className = 'history-total';
+      box.textContent = label;
+      const strong = document.createElement('strong');
+      strong.textContent = val.toLocaleString();
+      box.append(strong);
+      totals.append(box);
+    });
+    const details = document.createElement('div');
+    details.className = 'history-details';
+    details.textContent = item.type ? `Entry type: ${item.type}` : '';
+    card.append(heading,totals,details);
+    container.append(card);
+  });
+}
+function restoreFromHistory(idx) {
+  const source = cloudHistory[idx]?.fullData || {};
+  const data = normalizeLegacyData(source);
+  INPUT_IDS.forEach(id => {
+    const field = document.getElementById(id);
+    field.value = data[id] ?? '';
+  });
+  calculate();
+  closeHistory();
+}
+function closeHistory() {
+  document.getElementById('history-overlay').style.display = 'none';
+}
+document.querySelectorAll('.count-input').forEach(el => el.addEventListener('input',calculate));
+document.getElementById('count_name').addEventListener('input',saveLocalProgress);
+document.getElementById('count_date').addEventListener('change',saveLocalProgress);
+window.addEventListener('load',() => {
+  updateClock();
+  loadData();
+});
+</script>
 </body>
 </html>
