@@ -146,7 +146,7 @@ button:disabled { opacity:.55; cursor:wait; }
   .panel { width:100%; padding:10px; }
   .section-title { font-size:1.1rem; }
   .wall .fields { grid-template-columns:1fr; }
-  .cabinets .fields.four { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .cabinets .fields.four { grid-template-columns:repeat(4,minmax(0,1fr)); }
   .wall .field { height:58px; }
   .top .field, .box-panel .field, .name-panel .field, .date-panel .field { height:58px; }
   .register .field, .back .field { height:58px; }
@@ -221,6 +221,7 @@ button:disabled { opacity:.55; cursor:wait; }
         <input class="field count-input" type="number" min="0" step="1" id="back_cab_2" aria-label="Back Cabinet 2">
         <input class="field count-input" type="number" min="0" step="1" id="back_cab_3" aria-label="Back Cabinet 3">
         <input class="field count-input" type="number" min="0" step="1" id="back_cab_4" aria-label="Back Cabinet 4">
+        <input class="field count-input" type="number" min="0" step="1" id="back_cab_5" aria-label="Back Cabinet 5">
       </div>
     </section>
 
@@ -295,13 +296,13 @@ const INPUT_IDS = [
   'wr_1','wr_2','wr_3','wr_4','wr_5','wr_6','wr_7','wr_8',
   'top_shelf','top_cab_1','top_cab_2','top_cab_3','top_cab_4',
   'reg1_1','reg1_2','reg1_3',
-  'back_cab_1','back_cab_2','back_cab_3','back_cab_4',
+  'back_cab_1','back_cab_2','back_cab_3','back_cab_4','back_cab_5',
   'box','count_name','count_date','damaged','back_overflow'
 ];
 const PACK_FIELDS = ['wr_1','wr_2','wr_3','wr_4','wr_5','wr_6','wr_7','wr_8',
   'reg1_1','reg1_2','reg1_3','box','damaged'];
 const CARTON_FIELDS = ['top_shelf','top_cab_1','top_cab_2','top_cab_3','top_cab_4',
-  'back_cab_1','back_cab_2','back_cab_3','back_cab_4','back_overflow'];
+  'back_cab_1','back_cab_2','back_cab_3','back_cab_4','back_cab_5','back_overflow'];
 const LEGACY_WALL_FIELDS = Array.from({length:8}, (_,i) => [`wr_l_${i+1}`,`wr_r_${i+1}`]);
 let cloudHistory = [];
 let previousTotal = 0;
